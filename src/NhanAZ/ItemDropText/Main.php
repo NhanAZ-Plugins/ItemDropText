@@ -14,13 +14,19 @@ use pocketmine\utils\TextFormat;
 
 class Main extends PluginBase implements Listener {
 	use SingletonTrait;
+	private string $format;
 
 	protected function onEnable(): void {
 		self::setInstance($this);
 		$this->saveDefaultConfig();
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		$format = $this->getConfig()->get("format");
-		if (strpos($format, "{despawnDelay}")) {
+		$format = $this->getConfig()->get("format", "{name} x{count}");
+		if (!is_string($format)) {
+			$this->getLogger()->warning("Config format must be a string; using the default format.");
+			$format = "{name} x{count}";
+		}
+		$this->format = $format;
+		if (str_contains($format, "{despawnDelay}")) {
 			$this->getScheduler()->scheduleRepeatingTask(new DespawnDelayTask(), 20);
 		}
 	}
@@ -42,24 +48,23 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	public function setNameTag(ItemEntity $entity, int $count = null): void {
+	public function setNameTag(ItemEntity $entity, ?int $count = null): void {
 		$item = $entity->getItem();
-		$format = $this->getConfig()->get("format");
 		if ($count === null) {
-			$count = $entity->getItem()->getCount();
+			$count = $item->getCount();
 		}
 		$replacements = [
 			"{name}" => $item->getName(),
 			"{vanillaName}" => $item->getVanillaName(),
-			"{count}" => $count,
-			"{attackPoints}" => $item->getAttackPoints(),
-			"{cooldownTicks}" => $item->getCooldownTicks(),
-			"{defensePoints}" => $item->getDefensePoints(),
-			"{maxStackSize}" => $item->getMaxStackSize(),
+			"{count}" => (string) $count,
+			"{attackPoints}" => (string) $item->getAttackPoints(),
+			"{cooldownTicks}" => (string) $item->getCooldownTicks(),
+			"{defensePoints}" => (string) $item->getDefensePoints(),
+			"{maxStackSize}" => (string) $item->getMaxStackSize(),
 			"{lore}" => implode(TextFormat::EOL, $item->getLore()),
 			"{despawnDelay}" => $this->ticksToTimeFormat($entity->getDespawnDelay())
 		];
-		$format = str_replace(array_keys($replacements), array_values($replacements), strval($format));
+		$format = str_replace(array_keys($replacements), array_values($replacements), $this->format);
 		$entity->setNameTag(TextFormat::colorize($format));
 		$entity->setNameTagAlwaysVisible();
 	}
@@ -72,9 +77,7 @@ class Main extends PluginBase implements Listener {
 	public function onItemMerges(ItemMergeEvent $event): void {
 		$entity = $event->getEntity();
 		$target = $event->getTarget();
-		if ($entity instanceof ItemEntity) {
-			$count = $entity->getItem()->getCount() + $target->getItem()->getCount();
-			$this->setNameTag($target, $count);
-		}
+		$count = $entity->getItem()->getCount() + $target->getItem()->getCount();
+		$this->setNameTag($target, $count);
 	}
 }

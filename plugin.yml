@@ -1,10 +1,10 @@
 ---
 name: ItemDropText
-version: 0.0.4
+version: 0.0.5
 main: NhanAZ\ItemDropText\Main
 api: 5.0.0
 
-website: https://github.com/NhanAZ
-description: Displays floating text that contains information of the dropped item.
+website: https://github.com/NhanAZ-Plugins/ItemDropText
+description: Show configurable floating labels above dropped items on Axolotl-PM.
 author: NhanAZ
 ...
